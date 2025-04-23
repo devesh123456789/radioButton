@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SocialSpace</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+    }
+    header {
+      background: #4267B2;
+      padding: 16px;
+      color: white;
+      font-size: 24px;
+      text-align: center;
+      font-weight: bold;
+    }
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 15px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .profile-header {
+      display: flex;
+      align-items: center;
+    }
+    .profile-header img {
+      width: 50px;
+      border-radius: 50%;
+    }
+    .profile-header .info {
+      margin-left: 10px;
+    }
+
+    textarea {
+      width: 100%;
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 6px;
+      resize: none;
+      margin-top: 10px;
+    }
+
+    .btn {
+      background: #4267B2;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 5px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+
+    .post {
+      margin-top: 10px;
+    }
+
+    .post img {
+      max-width: 100%;
+      margin-top: 10px;
+      border-radius: 10px;
+    }
+
+    .like-comment {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+
+    .like-comment button {
+      background: none;
+      border: none;
+      color: #4267B2;
+      cursor: pointer;
+    }
+
+    .comment-box {
+      width: 100%;
+      padding: 6px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+    }
+
+    .notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #4BB543;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      display: none;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .friend-request {
+      background: #fff3cd;
+      padding: 10px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    .privacy-toggle {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>SocialSpace 🌐</header>
+
+  <div class="container">
+    <!-- User Profile -->
+    <div class="card profile-header">
+      <img src="https://i.pravatar.cc/100?img=12" />
+      <div class="info">
+        <div><strong>DEVESH SHARMA</strong></div>
+        <div>Status: <span id="privacy-status">Public</span></div>
+      </div>
+    </div>
+
+    <!-- Create Post -->
+    <div class="card">
+      <textarea id="postText" rows="3" placeholder="What's on your mind?"></textarea>
+      <input type="file" id="postImage" accept="image/*" />
+      <br />
+      <button class="btn" onclick="createPost()">Post</button>
+    </div>
+
+    <!-- Posts Feed -->
+    <div id="feed"></div>
+
+    <!-- Friend Request -->
+    <div class="card friend-request">
+      <span><strong>Alice</strong> sent you a friend request.</span>
+      <button class="btn" onclick="acceptRequest(this)">Accept</button>
+    </div>
+
+    <!-- Privacy Settings -->
+    <div class="card">
+      <label class="privacy-toggle">
+        <input type="checkbox" id="privacyToggle" onchange="togglePrivacy()" /> Private Profile
+      </label>
+    </div>
+  </div>
+
+  <!-- Notification -->
+  <div class="notification" id="notification">You have a new notification</div>
+
+  <script>
+    function createPost() {
+      const text = document.getElementById("postText").value;
+      const imageInput = document.getElementById("postImage");
+      const feed = document.getElementById("feed");
+      const postCard = document.createElement("div");
+      postCard.className = "card post";
+
+      let content = `<strong>John Doe</strong><p>${text}</p>`;
+
+      if (imageInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          content += `<img src="${e.target.result}" />`;
+          finalizePost(content, postCard, feed);
+        };
+        reader.readAsDataURL(imageInput.files[0]);
+      } else {
+        finalizePost(content, postCard, feed);
+      }
+
+      document.getElementById("postText").value = '';
+      imageInput.value = '';
+      showNotification("✅ Your post was shared!");
+    }
+
+    function finalizePost(content, postCard, feed) {
+      postCard.innerHTML = content + `
+        <div class="like-comment">
+          <button onclick="likePost(this)">👍 Like (<span>0</span>)</button>
+          <input class="comment-box" placeholder="Write a comment..." onkeydown="submitComment(event, this)">
+        </div>
+        <div class="comments"></div>
+      `;
+      feed.prepend(postCard);
+    }
+
+    function likePost(btn) {
+      let count = parseInt(btn.querySelector("span").textContent);
+      btn.querySelector("span").textContent = ++count;
+    }
+
+    function submitComment(e, input) {
+      if (e.key === "Enter") {
+        const comment = document.createElement("p");
+        comment.textContent = `💬 ${input.value}`;
+        input.closest(".post").querySelector(".comments").appendChild(comment);
+        input.value = '';
+      }
+    }
+
+    function acceptRequest(btn) {
+      btn.parentElement.innerHTML = "<strong>You are now friends!</strong>";
+      showNotification("🎉 Friend request accepted!");
+    }
+
+    function togglePrivacy() {
+      const status = document.getElementById("privacyToggle").checked ? "Private" : "Public";
+      document.getElementById("privacy-status").textContent = status;
+      showNotification(`🔒 Privacy set to ${status}`);
+    }
+
+    function showNotification(msg) {
+      const note = document.getElementById("notification");
+      note.textContent = msg;
+      note.style.display = "block";
+      setTimeout(() => { note.style.display = "none"; }, 3000);
+    }
+  </script>
+</body>
+</html>
